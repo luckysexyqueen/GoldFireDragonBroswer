@@ -1,1 +1,18 @@
-api/adult-proxy.ts
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/adult-proxy.ts": {
+      "runtime": "vercel-edge",
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
+}
