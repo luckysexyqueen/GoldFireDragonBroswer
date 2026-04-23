@@ -15,7 +15,6 @@
       "maxDuration": 30
     }
   },
-  "ignoreCommand": "echo 'Convex _generated is auto-generated, ignoring in build'",
-  "cleanUrls": true,
-  "trailingSlash": false
+  "ignoreCommand": "echo 'Skipping Convex generated files'",
+  "cleanUrls": true
 }
