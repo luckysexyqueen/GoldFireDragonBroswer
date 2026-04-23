@@ -7,5 +7,13 @@
       "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "supabase/functions/adult-proxy/index.ts": {
+      "runtime": "vercel-edge",
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
+}
 }
