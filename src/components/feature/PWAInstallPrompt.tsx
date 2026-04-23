@@ -1,40 +1,14 @@
 import { useState } from 'react';
 import { usePWA } from '@/hooks/usePWA';
 
-// ←←← 클립보드 안전 함수 (여기에 추가)
-const safeCopyToClipboard = async (text: string) => {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      alert("✅ URL이 복사되었습니다!");
-      return true;
-    }
-  } catch (e) { }
-
-  // fallback 방식
-  try {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-    alert("✅ URL이 복사되었습니다!");
-    return true;
-  } catch (err) {
-    alert("❌ 복사 실패\n\n수동으로 복사해주세요:\n" + text);
-    return false;
-  }
-};
-
 export default function PWAInstallPrompt() {
   const { canInstall, isIOS, isInstalled, platform, triggerInstall, dismiss } = usePWA();
+
   const [installing, setInstalling] = useState(false);
   const [done, setDone] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
+  // 안전장치: 데이터가 없으면 아무것도 안그림
   if (isInstalled || done) return null;
   if (!canInstall && !isIOS) return null;
 
@@ -44,7 +18,7 @@ export default function PWAInstallPrompt() {
       const outcome = await triggerInstall();
       if (outcome === 'accepted') setDone(true);
     } catch (err) {
-      console.error(err);
+      console.error('PWA Install Error:', err);
     } finally {
       setInstalling(false);
     }
