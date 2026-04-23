@@ -7,6 +7,8 @@ import ExtensionOptionsPage from "../pages/extension-options/page";
 import ExtensionPopupPage from "../pages/extension-popup/page";
 import ExtensionNewtabPage from "../pages/extension-newtab/page";
 import ExtensionWelcomePage from "../pages/extension-welcome/page";
+import SettingsPage from "../pages/settings/page";
+import ChatPage from "../pages/chat/page";
 
 const routes: RouteObject[] = [
   {
@@ -20,6 +22,14 @@ const routes: RouteObject[] = [
   {
     path: "/extensions",
     element: <ExtensionsPage />,
+  },
+  {
+    path: "/settings",
+    element: <SettingsPage />,
+  },
+  {
+    path: "/chat",
+    element: <ChatPage />,
   },
   {
     path: "/extension-options",

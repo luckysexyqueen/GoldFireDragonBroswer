@@ -18,7 +18,14 @@ export default function BottomNav() {
         <div className="flex items-center gap-4">
           <a href="#" className="text-sm text-white/70 hover:underline whitespace-nowrap cursor-pointer">개인정보처리방침</a>
           <a href="#" className="text-sm text-white/70 hover:underline whitespace-nowrap cursor-pointer">약관</a>
-          <a href="#" className="text-sm text-white/70 hover:underline whitespace-nowrap cursor-pointer">설정</a>
+          <Link to="/settings" className="text-sm text-white/70 hover:text-white hover:underline whitespace-nowrap cursor-pointer flex items-center gap-1">
+            <i className="ri-settings-3-line text-xs" />
+            <span>설정</span>
+          </Link>
+          <Link to="/chat" className="text-sm text-green-400/80 hover:text-green-300 hover:underline whitespace-nowrap cursor-pointer flex items-center gap-1">
+            <i className="ri-robot-line text-xs" />
+            <span>AI 채팅</span>
+          </Link>
           <Link to="/install" className="text-sm text-yellow-400/80 hover:text-yellow-300 hover:underline whitespace-nowrap cursor-pointer flex items-center gap-1">
             <i className="ri-android-line text-xs" />
             <span>APK 다운</span>
