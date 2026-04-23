@@ -9,10 +9,13 @@
     }
   ],
   "functions": {
-    "supabase/functions/adult-proxy/index.ts": {
+    "api/adult-proxy.ts": {
       "runtime": "vercel-edge",
       "memory": 1024,
       "maxDuration": 30
     }
-  }
+  },
+  "ignoreCommand": "echo 'Convex _generated is auto-generated, ignoring in build'",
+  "cleanUrls": true,
+  "trailingSlash": false
 }
