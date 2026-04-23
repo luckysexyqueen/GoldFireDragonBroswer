@@ -1,84 +1,99 @@
 import { useState } from 'react';
 import { usePWA } from '@/hooks/usePWA';
 
-/**
- * Global PWA Install Prompt Banner
- * — Shows native install prompt on Android/Desktop Chrome|Edge
- * — Shows manual instructions for iOS Safari
- * — Respects 7-day dismiss cooldown
- */
+// ←←← 클립보드 안전 함수 (여기에 추가)
+const safeCopyToClipboard = async (text: string) => {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      alert("✅ URL이 복사되었습니다!");
+      return true;
+    }
+  } catch (e) { }
+
+  // fallback 방식
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+    alert("✅ URL이 복사되었습니다!");
+    return true;
+  } catch (err) {
+    alert("❌ 복사 실패\n\n수동으로 복사해주세요:\n" + text);
+    return false;
+  }
+};
+
 export default function PWAInstallPrompt() {
-  const { canInstall, isIOS, isInstalled, platform, swRegistered, triggerInstall, dismiss } = usePWA();
+  const { canInstall, isIOS, isInstalled, platform, triggerInstall, dismiss } = usePWA();
   const [installing, setInstalling] = useState(false);
   const [done, setDone] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
-  // Don't show if already installed
-  if (isInstalled) return null;
-  // Don't show if nothing to prompt and not iOS
+  if (isInstalled || done) return null;
   if (!canInstall && !isIOS) return null;
-  // Don't show if done
-  if (done) return null;
 
   const handleInstall = async () => {
     setInstalling(true);
-    const outcome = await triggerInstall();
-    setInstalling(false);
-    if (outcome === 'accepted') {
-      setDone(true);
+    try {
+      const outcome = await triggerInstall();
+      if (outcome === 'accepted') setDone(true);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setInstalling(false);
     }
   };
 
-  const platformLabel =
-    platform === 'android-chrome' ? 'Android'
-    : platform === 'ios-safari'   ? 'iPhone/iPad'
-    : platform === 'desktop-edge' ? 'Edge'
-    : 'Chrome';
+  const platformLabel = platform === 'ios-safari' ? 'iOS' :
+    platform === 'android-chrome' ? 'Android' : 'Chrome';
 
-  // iOS Safari instruction modal
   if (isIOS && showIOSGuide) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        <div className="w-full max-w-sm bg-[#111] border border-white/15 rounded-2xl overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-gradient-to-br from-yellow-400 to-red-500 flex-shrink-0">
-                <i className="ri-fire-line text-white text-sm" />
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4">
+        <div className="w-full max-w-sm bg-[#1a1a1a] border border-yellow-500/30 rounded-3xl overflow-hidden">
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-red-500 rounded-2xl flex items-center justify-center">
+                <i className="ri-fire-line text-3xl text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">홈 화면에 추가</p>
-                <p className="text-xs text-gray-500">GoldFireDragon</p>
+                <p className="text-xl font-bold text-white">GoldFireDragon</p>
+                <p className="text-yellow-400">홈 화면에 추가</p>
               </div>
             </div>
-            <button onClick={() => { setShowIOSGuide(false); dismiss(); }} className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-300 cursor-pointer">
-              <i className="ri-close-line text-base" />
+
+            <div className="space-y-5 text-sm">
+              {[
+                { n: 1, icon: "ri-share-forward-line", title: "공유 버튼 탭", desc: "하단 Safari 공유 버튼(□↑)을 탭하세요" },
+                { n: 2, icon: "ri-add-box-line", title: "홈 화면에 추가", desc: "메뉴에서 '홈 화면에 추가'를 찾아 탭하세요" },
+                { n: 3, icon: "ri-check-line", title: "추가 완료", desc: "우측 상단 '추가'를 탭하세요" }
+              ].map(item => (
+                <div key={item.n} className="flex gap-4">
+                  <div className="w-8 h-8 rounded-2xl bg-yellow-500/20 flex items-center justify-center shrink-0">
+                    <i className={`${item.icon} text-yellow-400`} />
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">{item.title}</p>
+                    <p className="text-white/60 text-xs mt-1">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-4 border-t border-white/10">
+            <button
+              onClick={() => { setShowIOSGuide(false); dismiss(); }}
+              className="w-full py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-white font-medium"
+            >
+              닫기
             </button>
-          </div>
-
-          {/* Steps */}
-          <div className="p-5 space-y-4">
-            {[
-              { n: 1, icon: 'ri-share-forward-line', iconBg: 'bg-blue-500/20 text-blue-400', title: '하단 공유 버튼 탭', desc: '화면 하단 Safari 공유 버튼(□↑)을 탭하세요' },
-              { n: 2, icon: 'ri-add-box-line', iconBg: 'bg-green-500/20 text-green-400', title: '"홈 화면에 추가" 선택', desc: '스크롤해서 "홈 화면에 추가" 메뉴를 찾아 탭하세요' },
-              { n: 3, icon: 'ri-check-line', iconBg: 'bg-yellow-500/20 text-yellow-400', title: '"추가" 탭', desc: '우측 상단 "추가"를 탭하면 완료!' },
-            ].map((step) => (
-              <div key={step.n} className="flex items-start gap-3">
-                <div className={`w-9 h-9 flex items-center justify-center rounded-xl flex-shrink-0 ${step.iconBg}`}>
-                  <i className={`${step.icon} text-base`} />
-                </div>
-                <div className="flex-1 pt-0.5">
-                  <p className="text-sm font-medium text-white">{step.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{step.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="px-5 pb-5">
-            <p className="text-xs text-gray-600 text-center">
-              앱처럼 실행되고 오프라인에서도 사용 가능해요
-            </p>
           </div>
         </div>
       </div>
@@ -86,106 +101,42 @@ export default function PWAInstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-5 sm:bottom-5 sm:w-[340px] z-[9998]">
-      <div className="bg-[#111] border border-white/15 rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
-        {/* Top accent line */}
-        <div className="h-0.5 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500" />
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9998] w-full max-w-[340px] px-4">
+      <div className="bg-[#111] border border-yellow-500/30 rounded-3xl shadow-2xl overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-yellow-400 to-red-500" />
 
-        <div className="p-4">
-          {/* Header row */}
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex items-center gap-2.5">
-              {/* App icon from SW-generated PNG */}
-              <img
-                src="/pwa/icon-72.png"
-                alt="GoldFireDragon"
-                width={44}
-                height={44}
-                className="rounded-xl flex-shrink-0"
-                onError={(e) => {
-                  // fallback to gradient div if icon not loaded yet
-                  const target = e.currentTarget;
-                  target.style.display = 'none';
-                  const fb = target.nextElementSibling as HTMLElement;
-                  if (fb) fb.style.display = 'flex';
-                }}
-              />
-              <div
-                className="w-11 h-11 rounded-xl bg-gradient-to-br from-yellow-400 to-red-500 flex-shrink-0 items-center justify-center"
-                style={{ display: 'none' }}
-              >
-                <i className="ri-fire-line text-white text-xl" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white leading-tight">GoldFireDragon</p>
-                <p className="text-xs text-gray-500">앱으로 설치 — {platformLabel}</p>
-              </div>
+        <div className="p-5">
+          <div className="flex gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-red-500 rounded-2xl flex items-center justify-center shrink-0">
+              <i className="ri-fire-line text-3xl text-white" />
             </div>
-            <button
-              onClick={dismiss}
-              className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-gray-400 transition-colors cursor-pointer flex-shrink-0 mt-0.5"
-              aria-label="닫기"
-            >
-              <i className="ri-close-line text-base" />
-            </button>
+            <div className="flex-1 pt-1">
+              <p className="text-lg font-bold text-white">GoldFireDragon 앱 설치</p>
+              <p className="text-sm text-white/70 mt-1">{platformLabel}에서 앱처럼 사용하세요</p>
+            </div>
           </div>
 
-          {/* Features */}
-          <div className="flex items-center gap-3 mb-4 flex-wrap">
-            {[
-              { icon: 'ri-wifi-off-line', label: '오프라인 지원' },
-              { icon: 'ri-speed-up-line', label: '앱 속도' },
-              { icon: 'ri-notification-line', label: '알림' },
-            ].map((f) => (
-              <div key={f.label} className="flex items-center gap-1 text-xs text-gray-500">
-                <div className="w-3.5 h-3.5 flex items-center justify-center">
-                  <i className={`${f.icon} text-yellow-500 text-xs`} />
-                </div>
-                {f.label}
-              </div>
-            ))}
-          </div>
-
-          {/* SW status badge */}
-          {swRegistered && (
-            <div className="flex items-center gap-1.5 mb-3 text-xs text-green-500">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-              서비스 워커 등록됨 — 오프라인 준비 완료
-            </div>
-          )}
-
-          {/* Action buttons */}
-          <div className="flex gap-2">
+          <div className="flex gap-3 mt-6">
             {isIOS ? (
               <button
                 onClick={() => setShowIOSGuide(true)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-yellow-500 to-red-500 text-white rounded-xl text-sm font-semibold cursor-pointer whitespace-nowrap transition-opacity hover:opacity-90"
+                className="flex-1 py-3.5 bg-gradient-to-r from-yellow-500 to-red-500 text-black font-semibold rounded-2xl text-sm active:scale-95 transition-all"
               >
-                <i className="ri-add-box-line text-sm" />
-                홈 화면에 추가 방법
+                iOS 설치 방법 보기
               </button>
             ) : (
               <button
                 onClick={handleInstall}
                 disabled={installing}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-yellow-500 to-red-500 text-white rounded-xl text-sm font-semibold cursor-pointer whitespace-nowrap transition-opacity hover:opacity-90 disabled:opacity-60"
+                className="flex-1 py-3.5 bg-gradient-to-r from-yellow-500 to-red-500 text-black font-semibold rounded-2xl text-sm active:scale-95 transition-all disabled:opacity-70"
               >
-                {installing ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    설치 중...
-                  </>
-                ) : (
-                  <>
-                    <i className="ri-download-2-line text-sm" />
-                    앱으로 설치
-                  </>
-                )}
+                {installing ? "설치 중..." : "앱으로 설치"}
               </button>
             )}
+
             <button
               onClick={dismiss}
-              className="px-3 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 rounded-xl text-xs cursor-pointer whitespace-nowrap transition-colors"
+              className="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white/80 font-medium rounded-2xl text-sm transition-all"
             >
               나중에
             </button>
